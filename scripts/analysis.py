@@ -11,19 +11,15 @@ def data_load():
     return df
 
 def extract_new_column(data, column, extra = 0):
-    for id in data.Identifier.unique():
-        selected = data.Identifier == id
-        try:
-            base_vcm = data.loc[(selected) & (data.Ganho==30), 'VCM'].astype(float).values
-            if column == "factor":
-                data.loc[selected,'Fator VCM'] =  base_vcm / data.loc[selected,'VCM'] 
+    for base in data.Ganho.unique():
+        for id in data.Identifier.unique():
+            selected = data.Identifier == id
+            base_vcm = data.loc[(selected) & (data.Ganho==base), 'VCM'].astype(float).values
+            if column == "factor" and base_vcm:
+                c = "Base" + base.astype(str)
+                data.loc[selected, c] =  base_vcm / data.loc[selected,'VCM'] 
             elif column == "error":
                 data.loc[selected,'Error']=calculate_error(data.loc[selected], extra, base_vcm)
-        except:
-            print("Base vcm: ")
-            print(base_vcm)
-            print("data.loc: ")
-            print(data.loc[selected,'VCM'] )
     
 def bootstrap(array):
     B_repeats = 100000
@@ -61,13 +57,17 @@ def plot_bootstrap(boot_df):
 def plot_raw(data, xname, yname):
     sns.set_style("darkgrid")
     plt.figure(figsize=(12,6))   
-    sns.scatterplot(x=xname, y=yname, data=data,hue='Identifier',legend=False)
-    plt.legend(loc='upper right')
+    #sns.scatterplot(x=xname, y=yname, data=data,hue='Identifier',legend=False)
+    #plt.legend(loc='upper right')
     
-    sns.lineplot(x=xname, y=yname,data=data)
+    for column in data.columns[5:]:
+        ax = sns.lineplot(x=xname, y=column,data=data,label=column)
     
 #   sns.lmplot(x='Ganho', y='Fator VCM',data=data,hue='Identifier',size=(7),aspect=(12.0/7),legend=False)
-#   plt.legend(loc='upper left')
+    ax.set(xlabel='Ganho', ylabel='Fator')
+    plt.title("Fatores por ganho alterando-se o ganho base")
+
+    plt.legend()
 
     plt.show()
 
@@ -81,7 +81,7 @@ def plot_error(data, xname, yname):
             
     sns.scatterplot(x=xname, y=yname, data=data)#,hue='Serial')
     ax = sns.lineplot(x=xname, y=yname,data=data,color='r')
-    plt.title("Erro médio absoluto do VCM obtido utilizando os fatores por ganho")
+    plt.title("Erro medio absoluto do VCM obtido utilizando os fatores por ganho")
     ax.set(xlabel='Ganho', ylabel='Erro (fL)')
     plt.legend(loc='upper left')
     plt.show()
@@ -100,7 +100,7 @@ def calculate_error(df, boot_result, base_vcm):
     
     
 
-bs = True
+bs = False
     
 measures = data_load()
 measures = measures.dropna()

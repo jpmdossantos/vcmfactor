@@ -13,14 +13,20 @@ def data_load():
 def extract_new_column(data, column, extra = 0):
     for id in data.Identifier.unique():
         selected = data.Identifier == id
-        base_vcm = data.loc[(selected) & (data.Ganho==30), 'VCM'].astype(float).values
-        if column == "factor":
-            data.loc[selected,'Fator VCM'] =  base_vcm / data.loc[selected,'VCM'] 
-        elif column == "error":
-            data.loc[selected,'Error']=calculate_error(data.loc[selected], extra, base_vcm)
+        try:
+            base_vcm = data.loc[(selected) & (data.Ganho==30), 'VCM'].astype(float).values
+            if column == "factor":
+                data.loc[selected,'Fator VCM'] =  base_vcm / data.loc[selected,'VCM'] 
+            elif column == "error":
+                data.loc[selected,'Error']=calculate_error(data.loc[selected], extra, base_vcm)
+        except:
+            print("Base vcm: ")
+            print(base_vcm)
+            print("data.loc: ")
+            print(data.loc[selected,'VCM'] )
     
 def bootstrap(array):
-    B_repeats = 10000
+    B_repeats = 100000
     replicates = []
     for _ in range(B_repeats):
         boot_factor = np.random.choice(array,len(array))
@@ -55,7 +61,7 @@ def plot_bootstrap(boot_df):
 def plot_raw(data, xname, yname):
     sns.set_style("darkgrid")
     plt.figure(figsize=(12,6))   
-    sns.scatterplot(x=xname, y=yname, data=data,hue='Identifier')
+    sns.scatterplot(x=xname, y=yname, data=data,hue='Identifier',legend=False)
     plt.legend(loc='upper right')
     
     sns.lineplot(x=xname, y=yname,data=data)
